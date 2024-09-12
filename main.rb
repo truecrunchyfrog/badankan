@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 require 'discordrb'
 require 'dotenv/load'
 require 'rufus-scheduler'
