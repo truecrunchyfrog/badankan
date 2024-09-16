@@ -3,11 +3,39 @@
 require 'discordrb'
 require 'dotenv/load'
 require 'rufus-scheduler'
+require 'base64'
+require_relative 'moodle_pdf_scraper'
 
 scheduler = Rufus::Scheduler.new
 
 bot = Discordrb::Bot.new token: ENV['token']
 last_message = nil
+
+scheduler.cron ENV['exercise_check_crontab'] do
+  puts '--- begin reupload moodle PDF exercises procedure ---'
+  exercise_category = bot.channel(ENV['exercise_parent_category'])
+  scrape_moodle_pdfs(
+    ENV['moodle_login_url'],
+    ENV['moodle_username'],
+    Base64.decode64(ENV['moodle_password_base64']),
+    ENV['moodle_course_url'],
+    # Only allow activities whose names are not already a channel in the exercises category.
+    -> activity_name { exercise_category.text_channels.none? { |c| c.topic.eql? activity_name } },
+  ).each do |name, pdf_filename|
+    slide_filenames_and_links = pdf_to_slides(pdf_filename, -> page { page.text.downcase.include? ENV['exercise_slide_keyword'] })
+    puts "creating channel for PDF '#{name}'"
+    new_chan = exercise_category.server.create_channel(name, parent: exercise_category, topic: name)
+    slide_filenames_and_links.each do |slide_filename, links|
+      puts "uploading slide file '#{slide_filename}' with #{links.length} links"
+      new_chan.send_file(File.open(slide_filename, 'r'))
+      new_chan.send_message(links.join("\n")) if links.any?
+    end
+
+    slide_filenames_and_links.each { |f, _| File.delete(f) }
+    File.delete(pdf_filename)
+  end
+  puts '--- end reupload moodle PDF exercises procedure ---'
+end
 
 scheduler.cron ENV['presence_crontab'] do
   unless last_message == nil
@@ -55,6 +83,8 @@ bot.select_menu(custom_id: 'role_select') do |e|
       e.user.remove_role(presence_alert_role)
       e.respond(content: '🔕 Du kommer inte längre bli pingad med den här länken i framtiden.', ephemeral: true)
     end
+  else
+    e.respond(content: 'Unknown')
   end
 end
 
