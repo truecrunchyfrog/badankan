@@ -3,7 +3,8 @@ FROM ruby:3.3
 ENV TZ="Europe/Stockholm"
 
 RUN apt-get update && apt-get install -y \
-  libmagickwand-dev
+  libmagickwand-dev \
+  ghostscript
 
 # ImageMagick blocks PDF files by default. This removes that configuration.
 # https://stackoverflow.com/questions/52998331/imagemagick-security-policy-pdf-blocking-conversion
