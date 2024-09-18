@@ -3,9 +3,13 @@ require 'dotenv/load'
 require 'pdf/reader'
 require 'rmagick'
 require 'uri'
+require 'fileutils'
 
 PDF_DIR_NAME = 'pdf-temp'
 SLIDES_DIR_NAME = 'slides-temp'
+
+FileUtils.mkdir_p PDF_DIR_NAME
+FileUtils.mkdir_p SLIDES_DIR_NAME
 
 def scrape_moodle_pdfs(login_url, username, password, course_url, filter_activity_by_name)
   puts 'begin moodle scrape'
