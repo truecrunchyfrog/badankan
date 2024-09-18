@@ -11,7 +11,7 @@ scheduler = Rufus::Scheduler.new
 bot = Discordrb::Bot.new token: ENV['token']
 last_message = nil
 
-scheduler.cron ENV['exercise_check_crontab'] do
+def exercise_check(bot)
   puts '--- begin reupload moodle PDF exercises procedure ---'
   exercise_category = bot.channel(ENV['exercise_parent_category'])
   scrape_moodle_pdfs(
@@ -21,7 +21,7 @@ scheduler.cron ENV['exercise_check_crontab'] do
     ENV['moodle_course_url'],
     # Only allow activities whose names are not already a channel in the exercises category.
     -> activity_name { exercise_category.text_channels.none? { |c| c.topic.eql? activity_name } },
-  ).each do |name, pdf_filename|
+    ).each do |name, pdf_filename|
     slide_filenames_and_links = pdf_to_slides(pdf_filename, -> page { page.text.downcase.include? ENV['exercise_slide_keyword'] })
     puts "creating channel for PDF '#{name}'"
     new_chan = exercise_category.server.create_channel(name, parent: exercise_category, topic: name)
@@ -35,6 +35,11 @@ scheduler.cron ENV['exercise_check_crontab'] do
     File.delete(pdf_filename)
   end
   puts '--- end reupload moodle PDF exercises procedure ---'
+end
+
+scheduler.cron ENV['exercise_check_crontab'] do
+  puts 'exercise check triggered by crontab'
+  exercise_check(bot)
 end
 
 scheduler.cron ENV['presence_crontab'] do
@@ -86,6 +91,16 @@ bot.select_menu(custom_id: 'role_select') do |e|
   else
     e.respond(content: 'Unknown')
   end
+end
+
+bot.register_application_command(:exercisechecktrigger, 'Uppdatera övningarna manuellt.')
+
+bot.application_command :exercisechecktrigger do |event|
+  break unless event.user.id.to_s == ENV['admin']
+
+  event.respond(content: 'uppdaterar övningar manuellt...', ephemeral: true)
+  exercise_check(bot)
+  event.respond(content: 'övningar uppdaterade!', ephemeral: true)
 end
 
 bot.run
