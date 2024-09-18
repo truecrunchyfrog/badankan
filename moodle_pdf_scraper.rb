@@ -43,12 +43,16 @@ def scrape_moodle_pdfs(login_url, username, password, course_url, filter_activit
 end
 
 def pdf_to_slides(pdf_name, slide_filter)
+  puts "extracting slides from '#{pdf_name}'"
   slide_filenames_and_links = {}
 
   im = Magick::Image.read(pdf_name)
+  puts "magick: pdf is #{im.length} pages long"
   PDF::Reader.open(pdf_name) do |pdf_reader|
+    puts "pdf-reader: pdf is #{pdf_reader.page_count} pages long"
     pdf_reader.pages.each_with_index do |slide, i|
       if slide_filter.call(slide)
+        puts "slide #{i} is included"
         slide_filename = File.join(SLIDES_DIR_NAME, "#{i}.jpg")
         puts "saving slide image from '#{pdf_name}' (#{i}) to '#{slide_filename}'"
         im[i].write(slide_filename)
