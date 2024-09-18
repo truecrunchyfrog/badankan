@@ -1,7 +1,7 @@
 require 'mechanize'
 require 'dotenv/load'
 require 'pdf/reader'
-require 'RMagick'
+require 'rmagick'
 require 'uri'
 
 PDF_DIR_NAME = 'pdf-temp'
