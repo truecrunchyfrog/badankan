@@ -9,7 +9,20 @@ require_relative 'moodle_pdf_scraper'
 scheduler = Rufus::Scheduler.new
 
 bot = Discordrb::Bot.new token: ENV['token']
-last_message = nil
+last_presence_message = nil
+
+scheduler.cron ENV['study_session_start_crontab'] do
+  announcement_chan = bot.channel ENV['study_session_announcement_channel']
+  study_ping_role = ENV['study_session_role']
+  study_chan = ENV['study_session_channel']
+
+  announcement_chan.send_message "<@&#{study_ping_role}> Nu börjar vår privata kodstuga i <##{study_chan}>. Detta sker varje tisdag kl. 09:00." \
+                                   'Kodstugan pågår till `13:00`.'
+
+  scheduler.in ENV['study_session_duration'] do
+    announcement_chan.send_message "<@&#{study_ping_role}> Kodstugan är nu över."
+  end
+end
 
 def exercise_check(bot)
   puts '--- begin reupload moodle PDF exercises procedure ---'
@@ -43,15 +56,15 @@ scheduler.cron ENV['exercise_check_crontab'] do
 end
 
 scheduler.cron ENV['presence_crontab'] do
-  unless last_message == nil
-    last_message.delete
+  unless last_presence_message == nil
+    last_presence_message.delete
   end
 
   presence_link = ENV['presence_link']
   presence_link_channel = bot.channel(ENV['presence_link_channel'])
   presence_alert_role = ENV['presence_alert_role']
 
-  last_message = presence_link_channel.send_embed("<@&#{presence_alert_role}>") do |embed, view|
+  last_presence_message = presence_link_channel.send_embed("<@&#{presence_alert_role}>") do |embed, view|
       embed.title = 'Närvaro'
       embed.description =
         "Dags att registrera skoldagens närvaro! Gäller för dig som deltar på plats och/eller på distans.\n\n" \
