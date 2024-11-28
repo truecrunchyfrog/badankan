@@ -13,14 +13,13 @@ last_presence_message = nil
 
 scheduler.cron ENV['study_session_start_crontab'] do
   announcement_chan = bot.channel ENV['study_session_announcement_channel']
-  study_ping_role = ENV['study_session_role']
   study_chan = ENV['study_session_channel']
 
-  announcement_chan.send_message "<@&#{study_ping_role}> Nu börjar vår privata kodstuga i <##{study_chan}>. Detta sker varje tisdag kl. 09:00." \
-                                   'Kodstugan pågår till `13:00`.'
+  announcement_chan.send_message "Nu börjar vår privata kodstuga i <##{study_chan}>. Detta sker varje torsdag kl. 09:00." \
+                                   'Kodstugan pågår till `16:00`.'
 
   scheduler.in ENV['study_session_duration'] do
-    announcement_chan.send_message "<@&#{study_ping_role}> Kodstugan är nu över."
+    announcement_chan.send_message "Kodstugan är nu över."
   end
 end
 
