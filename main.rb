@@ -25,27 +25,35 @@ end
 
 def exercise_check(bot)
   puts '--- begin reupload moodle PDF exercises procedure ---'
-  exercise_category = bot.channel(ENV['exercise_parent_category'])
+  published_exercises_file = File.open('published_exercises', 'a+')
+  published_exercises = published_exercises_file.read.split
+  exercise_channel = bot.channel(ENV['exercise_channel'])
   scrape_moodle_pdfs(
     ENV['moodle_login_url'],
     ENV['moodle_username'],
     Base64.decode64(ENV['moodle_password_base64']),
     ENV['moodle_course_url'],
     # Only allow activities whose names are not already a channel in the exercises category.
-    -> activity_name { exercise_category.text_channels.none? { |c| c.topic.eql? activity_name } },
+    -> activity_name { !published_exercises.include? activity_name },
     ).each do |name, pdf_filename|
+    puts "uploading files for PDF '#{name}'"
+    published_exercises_file.puts name
+
+    puts "retrieving PDF data for '#{name}'"
     slide_filenames_and_links = pdf_to_slides(pdf_filename, -> page { page.text.downcase.include? ENV['exercise_slide_keyword'] })
-    puts "creating channel for PDF '#{name}'"
-    new_chan = exercise_category.server.create_channel(name, parent: exercise_category, topic: name)
+
+    exercise_channel.send_message(name).pin
+
     slide_filenames_and_links.each do |slide_filename, links|
       puts "uploading slide file '#{slide_filename}' with #{links.length} links"
-      new_chan.send_file(File.open(slide_filename, 'r'))
-      new_chan.send_message(links.join("\n")) if links.any?
+      exercise_channel.send_file(File.open(slide_filename, 'r'))
+      exercise_channel.send_message(links.join("\n")) if links.any?
     end
 
     slide_filenames_and_links.each { |f, _| File.delete(f) }
     File.delete(pdf_filename)
   end
+  published_exercises_file.close
   puts '--- end reupload moodle PDF exercises procedure ---'
 end
 
