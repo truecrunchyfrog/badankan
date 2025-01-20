@@ -11,18 +11,6 @@ scheduler = Rufus::Scheduler.new
 bot = Discordrb::Bot.new token: ENV['token']
 last_presence_message = nil
 
-scheduler.cron ENV['study_session_start_crontab'] do
-  announcement_chan = bot.channel ENV['study_session_announcement_channel']
-  study_chan = ENV['study_session_channel']
-
-  announcement_chan.send_message "Nu börjar vår privata kodstuga i <##{study_chan}>. Detta sker varje torsdag kl. 09:00." \
-                                   'Kodstugan pågår till `16:00`.'
-
-  scheduler.in ENV['study_session_duration'] do
-    announcement_chan.send_message "Kodstugan är nu över."
-  end
-end
-
 def exercise_check(bot)
   puts '--- begin reupload moodle PDF exercises procedure ---'
   published_exercises_file = File.open('published_exercises', 'a+')
